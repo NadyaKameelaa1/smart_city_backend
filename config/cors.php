@@ -24,6 +24,7 @@ return [
         'http://41.216.191.37:8000',
         'http://41.216.191.39:5173',
         'http://41.216.191.39:5174',
+        'https://apismartcity.qode.my.id',
         'https://purbalinggasmartcity.netlify.app',  
         'http://smartcitybackend-main-oqgeeg.free.laravel.cloud', 
         ],

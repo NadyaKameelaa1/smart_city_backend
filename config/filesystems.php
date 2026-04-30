@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://41.216.191.37:8000'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'https://apismartcity.qode.my.id'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
