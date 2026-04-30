@@ -37,9 +37,10 @@ Route::prefix('auth')->group(function () {
         
         Route::post('/wisata/{wisata_id}/rating',       [RatingController::class, 'store']);
         Route::get('/wisata/{wisata_id}/rating/saya',   [RatingController::class, 'mySingleRating']);
-        Route::get('/wisata/{wisata_id}/rating-stats', [RatingController::class, 'ratingStats']);
-        Route::get('/wisata/{wisata_id}/rating/status', [RatingController::class, 'status']);
-    });
+        });
+        
+    Route::get('/wisata/{wisata_id}/rating-stats', [RatingController::class, 'ratingStats']);
+    Route::get('/wisata/{wisata_id}/rating/status', [RatingController::class, 'status']);
 
     Route::get('/wisata', [WisataController::class, 'index']);
     Route::get('/wisata/{slug}', [WisataController::class, 'show']);
