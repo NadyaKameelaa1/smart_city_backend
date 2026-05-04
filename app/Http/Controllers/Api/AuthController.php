@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -131,10 +132,28 @@ class AuthController extends Controller
     // ─── POST /api/auth/logout ────────────────────────────────────
     public function logout(Request $request)
     {
-        // Hapus token yang sedang dipakai
-        $request->user()->currentAccessToken()->delete();
+        $tokenRevoked = false;
 
-        return response()->json(['message' => 'Logout berhasil.']);
+        if ($request->user()?->currentAccessToken()) {
+            $request->user()->currentAccessToken()->delete();
+            $tokenRevoked = true;
+        } else {
+            $plainTextToken = $request->bearerToken();
+
+            if ($plainTextToken) {
+                $accessToken = PersonalAccessToken::findToken($plainTextToken);
+
+                if ($accessToken) {
+                    $accessToken->delete();
+                    $tokenRevoked = true;
+                }
+            }
+        }
+
+        return response()->json([
+            'message' => 'Logout berhasil.',
+            'token_revoked' => $tokenRevoked,
+        ]);
     }
 
     // ─── GET /api/auth/me ─────────────────────────────────────────
