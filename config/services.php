@@ -39,7 +39,7 @@ return [
         'client_secret' => env('SSO_CLIENT_SECRET'),
         'redirect'      => env('SSO_REDIRECT_URI'),
         'base_url'      => env('SSO_BASE_URL'),
-        'frontend_url'  => env('SMART_CITY_FRONTEND_URL', 'http://41.216.191.37:5173'),
+        'frontend_url'  => env('SMART_CITY_FRONTEND_URL', 'https://smartcity.qode.my.id'),
     ],
 
 ];

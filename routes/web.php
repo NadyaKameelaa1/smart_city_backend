@@ -31,12 +31,12 @@ Route::get('/auth/sso/callback', function () {
 
         // Kirim token ke frontend via query string
         // Frontend akan ambil token ini dan simpan ke localStorage
-        $frontendUrl = rtrim(config('services.sso.frontend_url', 'http://41.216.191.37:5173'), '/');
+        $frontendUrl = rtrim(config('services.sso.frontend_url', 'https://sso.qode.my.id'), '/');
 
         return redirect($frontendUrl . '/sso-callback?token=' . $token);
 
     } catch (\Throwable $e) {
-        $frontendUrl = rtrim(config('services.sso.frontend_url', 'http://41.216.191.37:5173'), '/');
+        $frontendUrl = rtrim(config('services.sso.frontend_url', 'https://sso.qode.my.id'), '/');
 
         return redirect($frontendUrl . '/login?error=sso_failed');
     }
