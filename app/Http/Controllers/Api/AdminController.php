@@ -167,4 +167,64 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'Akun berhasil dihapus.']);
     }
+
+    // LOGIKA LOGIN SUPERADMIN :
+    public function superAdminLogin(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('username', $request->username)
+                    ->orWhere('email', $request->username)
+                    ->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Username atau password salah.'
+            ], 401);
+        }
+
+        if ($user->role !== 'superadmin') {
+            return response()->json([
+                'message' => 'Akses ditolak. Akun ini bukan super admin.'
+            ], 403);
+        }
+
+        $user->tokens()->where('name', 'superadmin_token')->delete();
+
+        $token = $user->createToken('superadmin_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login berhasil.',
+            'token'   => $token,
+            'user'    => [
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'username'   => $user->username,
+                'email'      => $user->email,
+                'role'       => $user->role,
+                'avatar_url' => $user->avatar_url,
+            ],
+        ]);
+    }
+
+    public function superAdminLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()?->delete();
+        return response()->json(['message' => 'Logout berhasil.']);
+    }
+
+    public function superAdminMe(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->role !== 'superadmin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        return response()->json(['user' => $user]);
+    }
+
 }

@@ -101,62 +101,69 @@ Route::prefix('auth')->group(function () {
     });
     
     Route::prefix('super-admin')->group(function () {
-        Route::get('/akun', [AdminController::class, 'adminAkun']);
-        Route::post('/akun', [AdminController::class, 'adminStore']);
-        Route::post('/akun/{id}', [AdminController::class, 'adminUpdate']);
-        Route::delete('/akun/{id}', [AdminController::class, 'adminDestroy']);
+        Route::post('/login', [AdminController::class, 'superAdminLogin']);
 
-        Route::get('/wisata', [WisataController::class, 'adminIndex']);
-        
-        Route::post('/wisata', [WisataController::class, 'store']);
-        Route::post('/wisata/{id}', [WisataController::class, 'update']);
-        Route::delete('/wisata/{id}', [WisataController::class, 'destroy']);
-        Route::patch('/wisata/{id}/status', [WisataController::class, 'updateStatus']);
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [AdminController::class, 'superAdminLogout']);
+            Route::get('/me',      [AdminController::class, 'superAdminMe']);
 
-        Route::get('/kecamatan', [KecamatanController::class, 'index']);
-        Route::get('/desa', [DesaController::class, 'index']);
+            Route::get('/akun', [AdminController::class, 'adminAkun']);
+            Route::post('/akun', [AdminController::class, 'adminStore']);
+            Route::post('/akun/{id}', [AdminController::class, 'adminUpdate']);
+            Route::delete('/akun/{id}', [AdminController::class, 'adminDestroy']);
 
-        Route::get('/pengumuman', [PengumumanController::class, 'index']);
-        Route::get('/pengumuman', [PengumumanController::class, 'adminIndex']);
-        Route::get('/pengumuman/{slug}', [PengumumanController::class, 'show']);
-        Route::post('/pengumuman',                [PengumumanController::class, 'store']);
-        Route::post('/pengumuman/{id}',           [PengumumanController::class, 'update']);
-        Route::delete('/pengumuman/{id}',         [PengumumanController::class, 'destroy']);
-        Route::patch('/pengumuman/{id}/status',   [PengumumanController::class, 'updatePenting']);
-        Route::patch('/pengumuman/{id}/featured', [PengumumanController::class, 'updatePrioritas']);
-        // Route::get('/pengumuman/{judul}/{exceptId}', [PengumumanController::class, 'index']);
-        
+            Route::get('/wisata', [WisataController::class, 'adminIndex']);
+            
+            Route::post('/wisata', [WisataController::class, 'store']);
+            Route::post('/wisata/{id}', [WisataController::class, 'update']);
+            Route::delete('/wisata/{id}', [WisataController::class, 'destroy']);
+            Route::patch('/wisata/{id}/status', [WisataController::class, 'updateStatus']);
 
-        Route::get('/berita', [BeritaController::class, 'index']);
-        Route::get('/berita', [BeritaController::class, 'adminIndex']);
-        Route::post('/berita',                [BeritaController::class, 'store']);
-        Route::post('/berita/{id}',           [BeritaController::class, 'update']);
-        Route::delete('/berita/{id}',         [BeritaController::class, 'destroy']);
-        Route::patch('/berita/{id}/status',   [BeritaController::class, 'updateStatus']);
-        Route::patch('/berita/{id}/featured', [BeritaController::class, 'updateFeatured']);
+            Route::get('/kecamatan', [KecamatanController::class, 'index']);
+            Route::get('/desa', [DesaController::class, 'index']);
 
-        Route::get('/event', [EventController::class, 'index']);
-        Route::get('/event', [EventController::class, 'adminIndex']);
-        Route::post('/event', [EventController::class, 'store']);
-        Route::post('/event/{id}', [EventController::class, 'update']);
-        Route::delete('/event/{id}', [EventController::class, 'destroy']);
-        Route::patch('/event/{id}/status', [EventController::class, 'updateStatus']);
+            Route::get('/pengumuman', [PengumumanController::class, 'index']);
+            Route::get('/pengumuman', [PengumumanController::class, 'adminIndex']);
+            Route::get('/pengumuman/{slug}', [PengumumanController::class, 'show']);
+            Route::post('/pengumuman',                [PengumumanController::class, 'store']);
+            Route::post('/pengumuman/{id}',           [PengumumanController::class, 'update']);
+            Route::delete('/pengumuman/{id}',         [PengumumanController::class, 'destroy']);
+            Route::patch('/pengumuman/{id}/status',   [PengumumanController::class, 'updatePenting']);
+            Route::patch('/pengumuman/{id}/featured', [PengumumanController::class, 'updatePrioritas']);
+            // Route::get('/pengumuman/{judul}/{exceptId}', [PengumumanController::class, 'index']);
+            
 
-        Route::get('/cctv',              [CCTVController::class, 'index']);
-        Route::post('/cctv',             [CCTVController::class, 'store']);
-        Route::post('/cctv/{id}',        [CCTVController::class, 'update']);
-        Route::patch('/cctv/{id}/status',[CCTVController::class, 'updateStatus']);
-        Route::delete('/cctv/{id}',      [CCTVController::class, 'destroy']);
-        
+            Route::get('/berita', [BeritaController::class, 'index']);
+            Route::get('/berita', [BeritaController::class, 'adminIndex']);
+            Route::post('/berita',                [BeritaController::class, 'store']);
+            Route::post('/berita/{id}',           [BeritaController::class, 'update']);
+            Route::delete('/berita/{id}',         [BeritaController::class, 'destroy']);
+            Route::patch('/berita/{id}/status',   [BeritaController::class, 'updateStatus']);
+            Route::patch('/berita/{id}/featured', [BeritaController::class, 'updateFeatured']);
 
-        Route::get('/buildings', [BuildingController::class, 'index']);
-        Route::post('/buildings', [BuildingController::class, 'store']);
-        Route::post('/buildings/{id}', [BuildingController::class, 'update']);
-        Route::patch('/buildings/{id}/status', [BuildingController::class, 'updateStatus']);
-        Route::delete('/buildings/{id}', [BuildingController::class, 'destroy']);
+            Route::get('/event', [EventController::class, 'index']);
+            Route::get('/event', [EventController::class, 'adminIndex']);
+            Route::post('/event', [EventController::class, 'store']);
+            Route::post('/event/{id}', [EventController::class, 'update']);
+            Route::delete('/event/{id}', [EventController::class, 'destroy']);
+            Route::patch('/event/{id}/status', [EventController::class, 'updateStatus']);
 
-        Route::get('/building-categories', [BuildingCategoriesController::class, 'index']);
-        Route::get('/building-groups', [BuildingGroupsController::class, 'index']);
+            Route::get('/cctv',              [CCTVController::class, 'index']);
+            Route::post('/cctv',             [CCTVController::class, 'store']);
+            Route::post('/cctv/{id}',        [CCTVController::class, 'update']);
+            Route::patch('/cctv/{id}/status',[CCTVController::class, 'updateStatus']);
+            Route::delete('/cctv/{id}',      [CCTVController::class, 'destroy']);
+            
+
+            Route::get('/buildings', [BuildingController::class, 'index']);
+            Route::post('/buildings', [BuildingController::class, 'store']);
+            Route::post('/buildings/{id}', [BuildingController::class, 'update']);
+            Route::patch('/buildings/{id}/status', [BuildingController::class, 'updateStatus']);
+            Route::delete('/buildings/{id}', [BuildingController::class, 'destroy']);
+
+            Route::get('/building-categories', [BuildingCategoriesController::class, 'index']);
+            Route::get('/building-groups', [BuildingGroupsController::class, 'index']);
+        });
     });
 
 
