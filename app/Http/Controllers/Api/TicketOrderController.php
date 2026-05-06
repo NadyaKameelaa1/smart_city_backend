@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 
 class TicketOrderController extends Controller
 {
+
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -49,36 +50,49 @@ class TicketOrderController extends Controller
      * beserta relasi wisata (nama, thumbnail, kategori).
      */
     public function index(Request $request)
-    {
-        $user = Auth::user();
-
-        $query = TicketOrder::with(['wisata:id,nama,thumbnail,kategori,slug'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('created_at');
-
-        // Filter opsional: ?status=Aktif | Digunakan
-        if ($request->filled('status')) {
-            $query->where('status_tiket', $request->status);
-        }
-
-        $orders = $query->get();
-
-        // Tambahkan flag sudah_direview untuk setiap order
-        // (cek apakah user sudah rating wisata ini untuk kunjungan ini)
-        $reviewedWisataIds = \App\Models\Rating::where('user_id', $user->id)
-            ->pluck('wisata_id')
-            ->toArray();
-
-        $orders = $orders->map(function ($order) use ($reviewedWisataIds) {
-            $order->sudah_direview = in_array($order->wisata_id, $reviewedWisataIds);
-            return $order;
-        });
-
-        return response()->json([
-            'success' => true,
-            'data'    => $orders,
-        ]);
+{
+    $user = Auth::user();
+ 
+    $query = TicketOrder::with(['wisata:id,nama,thumbnail,kategori,slug'])
+        ->where('user_id', $user->id)
+        ->orderByDesc('created_at');
+ 
+    if ($request->filled('status')) {
+        $query->where('status_tiket', $request->status);
     }
+ 
+    $orders = $query->get();
+ 
+    // Hitung jumlah rating yang sudah diberikan per wisata_id
+    // Satu rating = satu kunjungan yang sudah direview
+    $ratingCountPerWisata = \App\Models\Rating::where('user_id', $user->id)
+        ->select('wisata_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+        ->groupBy('wisata_id')
+        ->pluck('total', 'wisata_id')
+        ->all();
+ 
+    // Hitung jumlah tiket "Digunakan" per wisata_id
+    $usedCountPerWisata = TicketOrder::where('user_id', $user->id)
+        ->where('status_tiket', 'Digunakan')
+        ->select('wisata_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+        ->groupBy('wisata_id')
+        ->pluck('total', 'wisata_id')
+        ->all();
+ 
+    $orders = $orders->map(function ($order) use ($ratingCountPerWisata, $usedCountPerWisata) {
+        $wisataId     = $order->wisata_id;
+        $ratingDiberi = $ratingCountPerWisata[$wisataId] ?? 0;
+        $tiketDigunakan = $usedCountPerWisata[$wisataId] ?? 0;
+ 
+        // sudah_direview = true hanya jika jumlah rating >= jumlah kunjungan
+        // Artinya masih ada "slot" review jika ratingDiberi < tiketDigunakan
+        $order->sudah_direview = ($ratingDiberi >= $tiketDigunakan) && $tiketDigunakan > 0;
+ 
+        return $order;
+    });
+ 
+    return response()->json(['success' => true, 'data' => $orders]);
+}
 
     public function adminIndex(Request $request)
     {
@@ -102,26 +116,28 @@ class TicketOrderController extends Controller
      * Hanya bisa diakses oleh pemilik tiket.
      */
     public function show(string $kodeOrder)
-    {
-        $user = Auth::user();
-
-        $order = TicketOrder::with(['wisata:id,nama,thumbnail,kategori,slug'])
-            ->where('kode_order', $kodeOrder)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        // Cek apakah user sudah mereview wisata ini
-        $sudahDireview = \App\Models\Rating::where('user_id', $user->id)
-            ->where('wisata_id', $order->wisata_id)
-            ->exists();
-
-        $order->sudah_direview = $sudahDireview;
-
-        return response()->json([
-            'success' => true,
-            'data'    => $order,
-        ]);
-    }
+{
+    $user = Auth::user();
+ 
+    $order = TicketOrder::with(['wisata:id,nama,thumbnail,kategori,slug'])
+        ->where('kode_order', $kodeOrder)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+ 
+    // Cek slot review: berapa kali tiket digunakan vs berapa kali sudah review
+    $tiketDigunakan = TicketOrder::where('user_id', $user->id)
+        ->where('wisata_id', $order->wisata_id)
+        ->where('status_tiket', 'Digunakan')
+        ->count();
+ 
+    $ratingDiberi = \App\Models\Rating::where('user_id', $user->id)
+        ->where('wisata_id', $order->wisata_id)
+        ->count();
+ 
+    $order->sudah_direview = ($ratingDiberi >= $tiketDigunakan) && $tiketDigunakan > 0;
+ 
+    return response()->json(['success' => true, 'data' => $order]);
+}
 
     /**
  * Cek validitas tiket berdasarkan kode_order (sebelum gunakan)
