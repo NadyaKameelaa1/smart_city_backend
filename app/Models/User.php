@@ -37,6 +37,7 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar_url',
+        'sso_id',
         'kecamatan_id',
         'no_hp',
         'tanggal_lahir',
