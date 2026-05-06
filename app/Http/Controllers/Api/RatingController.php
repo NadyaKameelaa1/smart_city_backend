@@ -5,141 +5,123 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Rating;
 use App\Models\Wisata;
-use App\Models\TicketOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class RatingController extends Controller
 {
     /**
      * POST /api/wisata/{wisata_id}/rating
-     * Submit atau update rating untuk sebuah wisata.
-     *
-     * Rules:
-     *  - User harus sudah pernah berkunjung (ada ticket_order dengan status_tiket = 'Digunakan')
-     *  - Satu user hanya bisa punya 1 rating per wisata (upsert)
-     *  - Setelah simpan rating, update kolom rating & total_review di tabel wisata
+     * Kirim rating baru. User hanya boleh rating sekali per wisata.
+     * Butuh auth:sanctum.
      */
-    public function store(Request $request, int $wisataId)
+    public function store(Request $request, $wisata_id)
     {
-        // Coba dari auth, fallback ke dev_user_id
-        $user   = Auth::user();
-        $userId = $user?->id ?? $request->query('dev_user_id');
+        $user = Auth::user();
 
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        // Validasi wisata ada
+        $wisata = Wisata::find($wisata_id);
+        if (!$wisata) {
+            return response()->json(['message' => 'Wisata tidak ditemukan.'], 404);
         }
 
-        $request->validate(['rating' => 'required|integer|min:1|max:5']);
+        // Cek apakah user sudah pernah rating wisata ini
+        $existing = Rating::where('user_id', $user->id)
+            ->where('wisata_id', $wisata_id)
+            ->first();
 
-        $wisata = Wisata::findOrFail($wisataId);
-
-        $tiketDigunakan = TicketOrder::where('user_id', $userId)
-            ->where('wisata_id', $wisataId)
-            ->where('status_tiket', 'Digunakan')
-            ->count();
-
-        $ratingCount = Rating::where('user_id', $userId)
-            ->where('wisata_id', $wisataId)
-            ->count();
-
-        if ($ratingCount >= $tiketDigunakan) {
+        if ($existing) {
             return response()->json([
-                'success' => false,
-                'message' => 'Kamu sudah memberikan ulasan untuk semua kunjunganmu.',
-            ], 403);
+                'message' => 'Kamu sudah memberikan rating untuk wisata ini.',
+            ], 422);
         }
 
-        DB::transaction(function () use ($userId, $wisataId, $request, $wisata) {
-            Rating::create([
-                'user_id'   => $userId,
-                'wisata_id' => $wisataId,
-                'rating'    => $request->rating,
-            ]);
-
-            $avg   = Rating::where('wisata_id', $wisataId)->avg('rating');
-            $count = Rating::where('wisata_id', $wisataId)->count();
-
-            $wisata->update([
-                'rating'       => round($avg, 2),
-                'total_review' => $count,
-            ]);
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Rating berhasil disimpan.',
-            'data'    => [
-                'wisata_id'    => $wisataId,
-                'rating'       => $request->rating,
-                'rating_baru'  => round(Rating::where('wisata_id', $wisataId)->avg('rating'), 2),
-                'total_review' => Rating::where('wisata_id', $wisataId)->count(),
-            ],
+        $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ]);
-    }
 
-    public function status(int $wisataId)
-{
-    $user = Auth::user();
-    $userId = $user?->id ?? request()->query('dev_user_id');
-
-    if (!$userId) {
-        return response()->json([
-            'success'          => true,
-            'tiket_digunakan'  => 0,
-            'rating_diberikan' => 0,
-            'bisa_review'      => false,
+        // Simpan rating baru
+        Rating::create([
+            'user_id'   => $user->id,
+            'wisata_id' => $wisata_id,
+            'rating'    => $request->rating,
         ]);
-    }
 
-    $tiketDigunakan = TicketOrder::where('user_id', $userId)
-        ->where('wisata_id', $wisataId)
-        ->where('status_tiket', 'Digunakan')
-        ->count();
+        // Update kolom rating & total_review di tabel wisata
+        $avg   = Rating::where('wisata_id', $wisata_id)->avg('rating');
+        $count = Rating::where('wisata_id', $wisata_id)->count();
 
-    $ratingCount = Rating::where('user_id', $userId)
-        ->where('wisata_id', $wisataId)
-        ->count();
-
-    return response()->json([
-        'success'          => true,
-        'tiket_digunakan'  => $tiketDigunakan,
-        'rating_diberikan' => $ratingCount,
-        'bisa_review'      => $tiketDigunakan > $ratingCount,
-    ]);
-}
-
-    public function ratingStats(int $wisataId)
-    {
-        $perBintang = Rating::where('wisata_id', $wisataId)
-            ->select('rating', DB::raw('count(*) as total'))
-            ->groupBy('rating')
-            ->pluck('total', 'rating')
-            ->all();
+        $wisata->update([
+            'rating'       => round($avg, 2),
+            'total_review' => $count,
+        ]);
 
         return response()->json([
-            'success'    => true,
-            'per_bintang' => $perBintang,
+            'success'      => true,
+            'message'      => 'Rating berhasil dikirim.',
+            'rating_avg'   => round($avg, 2),
+            'total_review' => $count,
         ]);
     }
 
     /**
      * GET /api/wisata/{wisata_id}/rating/saya
-     * Cek apakah user sudah mereview wisata ini, dan berapa ratingnya.
+     * Ambil rating milik user yang sedang login untuk wisata tertentu.
+     * Butuh auth:sanctum.
      */
-    public function mySingleRating(int $wisataId)
+    public function mySingleRating($wisata_id)
     {
         $user = Auth::user();
 
         $rating = Rating::where('user_id', $user->id)
-            ->where('wisata_id', $wisataId)
+            ->where('wisata_id', $wisata_id)
             ->first();
 
         return response()->json([
-            'success'       => true,
-            'sudah_direview' => !is_null($rating),
-            'rating'        => $rating?->rating,
+            'sudah_direview' => (bool) $rating,
+            'rating'         => $rating?->rating,
         ]);
+    }
+
+    /**
+     * GET /api/wisata/{wisata_id}/rating-stats
+     * Statistik rating publik (tidak butuh login).
+     */
+    public function ratingStats($wisata_id)
+    {
+        $avg   = Rating::where('wisata_id', $wisata_id)->avg('rating');
+        $count = Rating::where('wisata_id', $wisata_id)->count();
+
+        // Distribusi per bintang
+        $dist = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $dist[$i] = Rating::where('wisata_id', $wisata_id)->where('rating', $i)->count();
+        }
+
+        return response()->json([
+            'rating_avg'   => $avg ? round($avg, 2) : 0,
+            'total_review' => $count,
+            'distribution' => $dist,
+        ]);
+    }
+
+    /**
+     * GET /api/wisata/{wisata_id}/rating/status
+     * Cek apakah user yang login sudah review wisata ini.
+     * Tidak crash jika user belum login (kembalikan false).
+     */
+    public function status(Request $request, $wisata_id)
+    {
+        $user = Auth::guard('sanctum')->user();
+
+        if (!$user) {
+            return response()->json(['sudah_direview' => false]);
+        }
+
+        $exists = Rating::where('user_id', $user->id)
+            ->where('wisata_id', $wisata_id)
+            ->exists();
+
+        return response()->json(['sudah_direview' => $exists]);
     }
 }
