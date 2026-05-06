@@ -26,6 +26,7 @@ return [
         'http://41.216.191.39:5174',
         'https://sso.qode.my.id',
         'https://apisso.qode.my.id',
+        'https://apismartpay.qode.my.id',
         'https://smartcity.qode.my.id',
         'https://apismartcity.qode.my.id',
         'https://purbalinggasmartcity.netlify.app',  
