@@ -149,14 +149,14 @@ Route::prefix('auth')->group(function () {
             Route::delete('/event/{id}', [EventController::class, 'destroy']);
             Route::patch('/event/{id}/status', [EventController::class, 'updateStatus']);
 
-            
+            Route::get('/cctv',              [CCTVController::class, 'index']);
             Route::post('/cctv',             [CCTVController::class, 'store']);
             Route::post('/cctv/{id}',        [CCTVController::class, 'update']);
             Route::patch('/cctv/{id}/status',[CCTVController::class, 'updateStatus']);
             Route::delete('/cctv/{id}',      [CCTVController::class, 'destroy']);
             
 
-            
+            Route::get('/buildings', [BuildingController::class, 'index']);
             Route::post('/buildings', [BuildingController::class, 'store']);
             Route::post('/buildings/{id}', [BuildingController::class, 'update']);
             Route::patch('/buildings/{id}/status', [BuildingController::class, 'updateStatus']);
@@ -169,6 +169,7 @@ Route::prefix('auth')->group(function () {
 
     Route::get('/cctv',              [CCTVController::class, 'index']);
     Route::get('/buildings', [BuildingController::class, 'index']);
+
 
 Route::get('/dev/tiket/{user_id}', function ($user_id) {
     try {
