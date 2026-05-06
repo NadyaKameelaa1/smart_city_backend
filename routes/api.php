@@ -64,6 +64,9 @@ Route::prefix('auth')->group(function () {
 
     Route::get('/kecamatan', [KecamatanController::class, 'index']);
 
+    Route::get('/cctv',              [CCTVController::class, 'index']);
+    Route::get('/buildings', [BuildingController::class, 'index']);
+
     Route::prefix('admin')->group(function () {
         Route::post('/login',  [AdminController::class, 'login']);
 
@@ -167,8 +170,7 @@ Route::prefix('auth')->group(function () {
         });
     });
 
-    Route::get('/cctv',              [CCTVController::class, 'index']);
-    Route::get('/buildings', [BuildingController::class, 'index']);
+    
 
 
 Route::get('/dev/tiket/{user_id}', function ($user_id) {
